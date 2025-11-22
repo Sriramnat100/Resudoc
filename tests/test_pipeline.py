@@ -1,5 +1,7 @@
 import sys
 import os
+import uuid
+from typing import List
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../scripts')))
 
 from pdf_reader import PDFReader
@@ -39,16 +41,18 @@ def test_pipeline():
         embedding = embedder.get_embedding(cleaned_text)
         print(f"   - Embedding Dimensions: {len(embedding)}")
         
-        # 4. Database Storage
+        # 4. Database Storage (using real UUIDs)
         print("4. Storing in Database...")
         db = DbManager()
-        resume_id = "mock-resume-id"
-        user_id = "mock-user-id"
+        resume_id = str(uuid.uuid4())
+        user_id = str(uuid.uuid4())
         
-        # Store Metadata AND Embedding
-        print("   - Upserting metadata...")
+        # Upsert Metadata
+        print(f"   - Upserting metadata for {resume_id}...")
         db.upsert_resume(resume_id, user_id, cleaned_text, skills)
-        print("   - Upserting embedding...")
+        
+        # Upsert Embedding
+        print(f"   - Upserting embedding...")
         db.upsert_embedding(resume_id, user_id, embedding)
         
         # 5. Matching Engine

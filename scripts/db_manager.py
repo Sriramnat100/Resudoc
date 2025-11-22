@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import psycopg2
 from pgvector.psycopg2 import register_vector
 from typing import List, Any, Optional, Tuple, Dict
@@ -66,26 +68,26 @@ class DbManager:
             self.conn.rollback()
             return False
 
-    def upsert_resume(self, resume_id: str, user_id: str, content: str, skills: List[str]) -> bool:
+    def upsert_resume(self, resume_id: str, user_id: str, content: str, skills: List[str], filename: str = None) -> bool:
         """
-        Inserts or updates resume metadata (content, skills).
+        Inserts or updates resume metadata (content, skills, filename).
         """
         if not self.conn:
             print(f"[MOCK DB] Upserting resume metadata for {resume_id}")
             return True
 
         # We assume a 'resumes' table exists as per schema.sql
-        # id, user_id, content, skills
+        # id, user_id, filename, content, skills
         query = """
-            INSERT INTO resumes (id, user_id, content, skills)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO resumes (id, user_id, filename, content, skills)
+            VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (id) 
-            DO UPDATE SET content = EXCLUDED.content, skills = EXCLUDED.skills, user_id = EXCLUDED.user_id;
+            DO UPDATE SET filename = EXCLUDED.filename, content = EXCLUDED.content, skills = EXCLUDED.skills, user_id = EXCLUDED.user_id;
         """
         try:
             with self.conn.cursor() as cur:
                 from psycopg2.extras import Json
-                cur.execute(query, (resume_id, user_id, content, Json(skills)))
+                cur.execute(query, (resume_id, user_id, filename, content, Json(skills)))
             self.conn.commit()
             return True
         except Exception as e:
@@ -108,14 +110,15 @@ class DbManager:
                 for rid in resume_ids
             }
 
-        query = "SELECT id, content, skills FROM resumes WHERE id = ANY(%s);"
+        # Cast the string array to UUID array for PostgreSQL
+        query = "SELECT id, filename, content, skills FROM resumes WHERE id = ANY(%s::uuid[]);"
         try:
             with self.conn.cursor() as cur:
                 cur.execute(query, (resume_ids,))
                 rows = cur.fetchall()
                 
             return {
-                str(row[0]): {"content": row[1], "skills": row[2]}
+                str(row[0]): {"filename": row[1], "content": row[2], "skills": row[3]}
                 for row in rows
             }
         except Exception as e:

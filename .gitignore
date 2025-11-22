@@ -1,6 +1,31 @@
+# Python
 __pycache__/
 *.pyc
-.env
-.DS_Store
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environment
 venv/
+env/
+ENV/
+
+# Environment Variables
 .env
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+*.pdf
+# Note: requirements.txt is intentionally NOT ignored - it should be committed!

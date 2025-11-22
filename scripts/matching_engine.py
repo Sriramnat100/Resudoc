@@ -73,6 +73,7 @@ class MatchingEngine:
             
             scored_candidates.append({
                 "resume_id": rid,
+                "filename": details.get('filename', 'Unknown'),
                 "final_score": final_score,
                 "semantic_score": semantic_score,
                 "skill_score": skill_score,

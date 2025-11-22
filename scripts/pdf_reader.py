@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import re
 import json
 import ftfy
@@ -121,18 +123,30 @@ class PDFReader:
             return ["Mock Skill 1", "Mock Skill 2", "Python (Mock)"]
 
         prompt = f"""
-        Extract the top 15-20 technical skills from the following resume text.
+        Extract 15-20 CONCRETE technical skills from the following text.
+        
+        Focus ONLY on:
+        - Programming languages (Python, Java, C++, JavaScript, etc.)
+        - Frameworks and libraries (React, TensorFlow, PyTorch, Django, etc.)
+        - Tools and technologies (Git, Docker, AWS, PostgreSQL, etc.)
+        - Specific technical methodologies (Machine Learning, Deep Learning, NLP, Computer Vision, etc.)
+        
+        DO NOT include:
+        - Soft skills (communication, teamwork, etc.)
+        - Abstract concepts (problem-solving, innovation, etc.)
+        - Job responsibilities (build applications, collaborate, etc.)
+        
         Return ONLY a JSON list of strings. Do not include any other text.
         
-        Resume Text:
-        {text[:4000]}  # Truncate to avoid token limits if necessary
+        Text:
+        {text[:4000]}
         """
 
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that extracts technical skills from resumes."},
+                    {"role": "system", "content": "You are a technical recruiter who extracts concrete technical skills from resumes and job descriptions. Focus on specific technologies, not abstract concepts."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.0

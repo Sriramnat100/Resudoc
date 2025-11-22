@@ -17,11 +17,12 @@ class NearestNeighbor:
         """
         # Query to find nearest neighbors
         # We select 1 - (embedding <=> query) to get cosine similarity (where 1 is identical)
+        # Note: pgvector expects the embedding to be cast to vector type
         query = """
-            SELECT resume_id, 1 - (embedding <=> %s) as similarity
+            SELECT resume_id, 1 - (embedding <=> %s::vector) as similarity
             FROM resume_embeddings
             WHERE user_id = %s
-            ORDER BY embedding <=> %s
+            ORDER BY embedding <=> %s::vector
             LIMIT %s;
         """
         
@@ -33,7 +34,10 @@ class NearestNeighbor:
                 {"resume_id": "mock-resume-2", "similarity": 0.88}
             ]
 
-        rows = self.db.fetch_all(query, (job_embedding, user_id, job_embedding, k))
+        # Convert embedding list to string format for pgvector: '[1,2,3,...]'
+        embedding_str = '[' + ','.join(map(str, job_embedding)) + ']'
+        
+        rows = self.db.fetch_all(query, (embedding_str, user_id, embedding_str, k))
         
         results = []
         for row in rows:
