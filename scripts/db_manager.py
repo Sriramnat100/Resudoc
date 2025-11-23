@@ -68,7 +68,7 @@ class DbManager:
             self.conn.rollback()
             return False
 
-    def upsert_resume(self, resume_id: str, user_id: str, content: str, skills: List[str], filename: str = None) -> bool:
+    def upsert_resume(self, resume_id: str, user_id: str, content: str, skills: List[str] = [], filename: str = None) -> bool:
         """
         Inserts or updates resume metadata (content, skills, filename).
         """

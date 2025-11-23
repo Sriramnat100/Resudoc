@@ -43,13 +43,11 @@ def ingest_resumes(directory: str = "Resumes"):
         print(f"\nProcessing: {filename}")
         
         try:
-            # 1. Extract Text & Skills
+            # 1. Extract Text
             text = pdf_reader.read_pdf(filepath)
             cleaned_text = pdf_reader.clean_text(text)
-            skills = pdf_reader.extract_skills(cleaned_text)
             
             print(f"   - Extracted {len(cleaned_text)} chars")
-            print(f"   - Found {len(skills)} skills: {skills[:3]}...")
 
             # 2. Generate Embedding
             embedding = embedder.get_embedding(cleaned_text)
@@ -58,9 +56,8 @@ def ingest_resumes(directory: str = "Resumes"):
             # 3. Generate a deterministic ID based on filename
             resume_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, filename))
 
-            # 4. Upsert to DB
-            # Upsert Metadata (including filename)
-            db.upsert_resume(resume_id, user_id, cleaned_text, skills, filename)
+            # 4. Upsert to DB (no skills - will be ranked by LLM later)
+            db.upsert_resume(resume_id, user_id, cleaned_text, filename=filename)
             # Upsert Embedding
             db.upsert_embedding(resume_id, user_id, embedding)
             
