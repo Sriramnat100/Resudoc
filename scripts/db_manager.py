@@ -68,32 +68,52 @@ class DbManager:
             self.conn.rollback()
             return False
 
-    def upsert_resume(self, resume_id: str, user_id: str, content: str, skills: List[str] = [], filename: str = None) -> bool:
+    def upsert_resume(self, resume_id: str, user_id: str, content: str, skills: List[str] = [], filename: str = None, tags: List[str] = []) -> bool:
         """
-        Inserts or updates resume metadata (content, skills, filename).
+        Inserts or updates resume metadata (content, skills, filename, tags).
         """
         if not self.conn:
             print(f"[MOCK DB] Upserting resume metadata for {resume_id}")
             return True
 
-        # We assume a 'resumes' table exists as per schema.sql
-        # id, user_id, filename, content, skills
-        query = """
-            INSERT INTO resumes (id, user_id, filename, content, skills)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) 
-            DO UPDATE SET filename = EXCLUDED.filename, content = EXCLUDED.content, skills = EXCLUDED.skills, user_id = EXCLUDED.user_id;
-        """
+        # Try with tags first, fall back to without tags if column doesn't exist
         try:
+            query = """
+                INSERT INTO resumes (id, user_id, filename, content, skills, tags)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) 
+                DO UPDATE SET filename = EXCLUDED.filename, content = EXCLUDED.content, skills = EXCLUDED.skills, tags = EXCLUDED.tags, user_id = EXCLUDED.user_id;
+            """
             with self.conn.cursor() as cur:
                 from psycopg2.extras import Json
-                cur.execute(query, (resume_id, user_id, filename, content, Json(skills)))
+                cur.execute(query, (resume_id, user_id, filename, content, Json(skills), tags))
             self.conn.commit()
             return True
         except Exception as e:
-            print(f"Error upserting resume metadata: {e}")
-            self.conn.rollback()
-            return False
+            # If tags column doesn't exist, try without it
+            if "tags" in str(e).lower():
+                print(f"Warning: tags column not found, inserting without tags")
+                self.conn.rollback()
+                try:
+                    query = """
+                        INSERT INTO resumes (id, user_id, filename, content, skills)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (id) 
+                        DO UPDATE SET filename = EXCLUDED.filename, content = EXCLUDED.content, skills = EXCLUDED.skills, user_id = EXCLUDED.user_id;
+                    """
+                    with self.conn.cursor() as cur:
+                        from psycopg2.extras import Json
+                        cur.execute(query, (resume_id, user_id, filename, content, Json(skills)))
+                    self.conn.commit()
+                    return True
+                except Exception as e2:
+                    print(f"Error upserting resume metadata: {e2}")
+                    self.conn.rollback()
+                    return False
+            else:
+                print(f"Error upserting resume metadata: {e}")
+                self.conn.rollback()
+                return False
 
     def get_resumes_by_ids(self, resume_ids: List[str]) -> Dict[str, Any]:
         """
@@ -155,6 +175,116 @@ class DbManager:
                 return cur.fetchall()
         except Exception as e:
             print(f"Error fetching data: {e}")
+            return []
+
+    def list_resumes(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        Lists all resumes for a given user with their tags.
+        """
+        if not self.conn:
+            print(f"[MOCK DB] Listing resumes for user {user_id}")
+            return []
+
+        query = """
+            SELECT id, filename, created_at, tags 
+            FROM resumes 
+            WHERE user_id = %s 
+            ORDER BY created_at DESC;
+        """
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (user_id,))
+                rows = cur.fetchall()
+                
+            return [
+                {
+                    "id": str(row[0]),
+                    "filename": row[1],
+                    "created_at": str(row[2]) if row[2] else None,
+                    "tags": row[3] if row[3] else []
+                }
+                for row in rows
+            ]
+        except Exception as e:
+            print(f"Error listing resumes: {e}")
+            return []
+
+    def delete_resume(self, resume_id: str) -> bool:
+        """
+        Deletes a resume and its embedding (cascade will handle embedding).
+        """
+        if not self.conn:
+            print(f"[MOCK DB] Deleting resume {resume_id}")
+            return True
+
+        query = "DELETE FROM resumes WHERE id = %s;"
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (resume_id,))
+                deleted = cur.rowcount > 0
+            self.conn.commit()
+            return deleted
+        except Exception as e:
+            print(f"Error deleting resume: {e}")
+            self.conn.rollback()
+            return False
+
+    def list_folders(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        Lists all unique tags/folders for a user with resume counts.
+        Returns empty list if tags column doesn't exist.
+        """
+        if not self.conn:
+            print(f"[MOCK DB] Listing folders for user {user_id}")
+            return []
+
+        try:
+            query = """
+                SELECT UNNEST(tags) as tag, COUNT(*) as count
+                FROM resumes
+                WHERE user_id = %s AND tags IS NOT NULL AND array_length(tags, 1) > 0
+                GROUP BY tag
+                ORDER BY tag;
+            """
+            with self.conn.cursor() as cur:
+                cur.execute(query, (user_id,))
+                rows = cur.fetchall()
+                
+            return [
+                {
+                    "name": row[0],
+                    "count": row[1]
+                }
+                for row in rows
+            ]
+        except Exception as e:
+            # If tags column doesn't exist, just return empty list
+            if "tags" in str(e).lower() or "does not exist" in str(e).lower():
+                return []
+            print(f"Error listing folders: {e}")
+            return []
+
+    def get_resumes_by_tags(self, user_id: str, tags: List[str]) -> List[str]:
+        """
+        Gets resume IDs that match ANY of the given tags.
+        """
+        if not self.conn:
+            print(f"[MOCK DB] Getting resumes by tags for user {user_id}")
+            return []
+
+        query = """
+            SELECT id
+            FROM resumes
+            WHERE user_id = %s AND tags && %s
+        """
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (user_id, tags))
+                rows = cur.fetchall()
+                
+            return [str(row[0]) for row in rows]
+        except Exception as e:
+            print(f"Error getting resumes by tags: {e}")
             return []
 
     def close(self):

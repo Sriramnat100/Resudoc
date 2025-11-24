@@ -9,6 +9,7 @@ create table if not exists resumes (
   filename text, -- Original PDF filename for easy identification
   content text,
   skills jsonb, -- This stores your list of skills as a JSON array
+  tags text[] default '{}', -- Tags/folders for organizing resumes (e.g., ['SWE', 'Python'])
   created_at timestamptz default now()
 );
 
@@ -26,3 +27,6 @@ create table if not exists resume_embeddings (
 -- but defining it here is fine for starting out.
 create index on resume_embeddings using ivfflat (embedding vector_cosine_ops)
 with (lists = 100);
+
+-- 5. Create a GIN index on tags for fast tag-based filtering
+create index if not exists idx_resumes_tags on resumes using gin(tags);

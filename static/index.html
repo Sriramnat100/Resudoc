@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resudoc - AI Resume Matching</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h3>📁 Folders</h3>
+            <div id="folderList" class="folder-list">
+                <div class="folder-item all-folder active" data-tag="">
+                    <span>📋 All Resumes</span>
+                    <span class="folder-count" id="allCount">0</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="container">
+            <header>
+                <h1>🎯 Resudoc</h1>
+                <p class="subtitle">AI-Powered Resume Matching</p>
+            </header>
+
+            <!-- Upload Section -->
+            <section class="card">
+                <h2>📄 Upload Resumes</h2>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept=".pdf" multiple hidden>
+                    <div class="upload-prompt">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p>Click to upload or drag and drop</p>
+                        <span class="file-types">PDF files only</span>
+                    </div>
+                </div>
+                <div class="tag-input-section">
+                    <label for="tagInput">Tags (comma-separated):</label>
+                    <input type="text" id="tagInput" placeholder="e.g., SWE, Python, Senior" />
+                </div>
+                <div id="fileList" class="file-list"></div>
+                <button id="uploadBtn" class="btn btn-primary" disabled>Upload Resumes</button>
+            </section>
+
+            <!-- Resume List Section -->
+            <section class="card" id="resumeListSection" style="display: none;">
+                <h2 id="resumeListTitle">📋 All Resumes</h2>
+                <div id="resumeList" class="resume-list"></div>
+            </section>
+
+            <!-- Job Description Section -->
+            <section class="card">
+                <h2>💼 Job Description</h2>
+                <textarea id="jdInput"
+                    placeholder="Paste the job description here...&#10;&#10;Example: Looking for a Python engineer with ML experience, knowledge of transformers, and experience building AI applications..."
+                    rows="8"></textarea>
+                <div class="match-controls">
+                    <div class="filter-section">
+                        <label>Filter by tags:</label>
+                        <div id="tagFilters" class="tag-filters">
+                            <label class="tag-checkbox">
+                                <input type="checkbox" value="" checked> All
+                            </label>
+                        </div>
+                    </div>
+                    <div class="match-actions">
+                        <label>
+                            Top candidates:
+                            <select id="topK">
+                                <option value="3">3</option>
+                                <option value="5" selected>5</option>
+                                <option value="10">10</option>
+                            </select>
+                        </label>
+                        <button id="matchBtn" class="btn btn-primary">Find Best Matches</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="card results-section" id="resultsSection" style="display: none;">
+                <h2>🏆 Top Candidates</h2>
+                <div id="results"></div>
+            </section>
+
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=3"></script>
+</body>
+
+</html>

@@ -18,7 +18,7 @@ class MatchingEngine:
         self.nn = NearestNeighbor(db_manager)
         self.llm_ranker = LLMRanker()
 
-    def match_best_resume(self, user_id: str, jd_text: str, k: int = 5) -> List[Dict[str, Any]]:
+    def match_best_resume(self, user_id: str, jd_text: str, k: int = 5, tags: List[str] = None) -> List[Dict[str, Any]]:
         """
         Finds and ranks the best resumes for a given JD using LLM-based ranking.
         """
@@ -31,7 +31,7 @@ class MatchingEngine:
 
         # 2. Find Nearest Neighbors (Semantic Search)
         print(f"   [MatchingEngine] Finding top {k} candidates via vector search...")
-        candidates = self.nn.find_nearest_resumes(user_id, jd_embedding, k=k)
+        candidates = self.nn.find_nearest_resumes(user_id, jd_embedding, k=k, tags=tags)
         
         if not candidates:
             print("   [MatchingEngine] No candidates found.")
