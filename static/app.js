@@ -50,12 +50,12 @@ function renderFolders(totalCount) {
     existingFolders.forEach(f => f.remove());
 
     // Add folder items
-    folders.forEach(folder => {
+    folders.forEach((folder, index) => {
         const folderItem = document.createElement('div');
         folderItem.className = 'folder-item';
         folderItem.dataset.tag = folder.name;
         folderItem.innerHTML = `
-            <span>📁 ${folder.name}</span>
+            <span><span class="folder-number">${index + 1}.</span> 📁 ${folder.name}</span>
             <span class="folder-count">${folder.count}</span>
         `;
         folderList.appendChild(folderItem);
@@ -103,10 +103,12 @@ async function loadResumes(tag = '') {
         if (resumes.length === 0) {
             resumeList.innerHTML = '<p style="color: var(--text-muted);">No resumes found' + (tag ? ` with tag "${tag}"` : '') + '.</p>';
         } else {
-            resumeList.innerHTML = resumes.map(resume => `
+            resumeList.innerHTML = resumes.map((resume, index) => `
                 <div class="resume-item">
                     <div class="resume-item-info">
-                        <div class="resume-item-name">📄 ${resume.filename}</div>
+                        <div class="resume-item-name">
+                            <span class="resume-number">${index + 1}.</span> 📄 ${resume.filename}
+                        </div>
                         ${resume.tags && resume.tags.length > 0 ? `
                             <div class="resume-item-tags">
                                 ${resume.tags.map(t => `<span class="resume-tag">${t}</span>`).join('')}
